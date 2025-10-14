@@ -169,6 +169,10 @@
 	{/if}
 </div>
 
+<footer>
+	<p>Video Hub@0.1.0</p>
+</footer>
+
 <style>
 	.no-controls::-webkit-media-controls {
 		display: none !important;
