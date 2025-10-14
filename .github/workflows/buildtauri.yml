@@ -19,7 +19,6 @@ jobs:
             deb: arm64
             rpm: aarch64
             appimage: aarch64
-        
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -32,11 +31,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libgtk-3-dev libatk1.0-dev libjavascriptcoregtk-4.1-dev libsoup-3.0-dev
 
-      - name: setup node
-        uses: actions/setup-node@v4
+      - name: setup bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: lts/*
-          cache: 'yarn' # Set this to npm, yarn or pnpm.
+          bun-version: latest
 
       - name: install Rust stable
         uses: dtolnay/rust-toolchain@stable # Set this to dtolnay/rust-toolchain@nightly
@@ -50,8 +48,7 @@ jobs:
           workspaces: './src-tauri -> target'
 
       - name: install frontend dependencies
-        # If you don't have `beforeBuildCommand` configured you may want to build your frontend here too.
-        run: yarn install # change this to npm or pnpm depending on which one you use.
+        run: bun install
 
       - uses: tauri-apps/tauri-action@v0.5.16
         env:
@@ -82,7 +79,7 @@ jobs:
         with:
           name: RPM Bundle
           path: ${{ github.workspace }}/src-tauri/target/release/bundle/rpm/${{ env.PRODUCT_NAME }}-${{ env.APP_VERSION }}-1.${{ matrix.rpm }}.rpm
-  
+
       - name: Upload appimage bundle
         uses: actions/upload-artifact@v4
         with:
