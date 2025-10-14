@@ -1,11 +1,31 @@
 <script lang="ts">
-	import { invoke } from '@tauri-apps/api/core';
+	import { onMount } from 'svelte';
+	import { invoke, convertFileSrc } from '@tauri-apps/api/core';
 
 	let config = $state('');
 	let videoUrl = $state('');
 	let videoPath = $state('');
 	let status = $state('');
 	let isDownloading = $state(false);
+	let videoList = $state<string[]>([]);
+	let videos = $state<string[]>([]);
+	let currentVideoIndex = $state(-1);
+	let videoElement: HTMLVideoElement | undefined = $state(undefined);
+	let mp4Folder = $state('');
+
+	onMount(async () => {
+		document.addEventListener('fullscreenchange', () => {
+			if (!document.fullscreenElement) {
+				currentVideoIndex = -1;
+				status = 'Playback stopped';
+			}
+		});
+		try {
+			mp4Folder = await invoke('get_mp4_folder_cmd');
+		} catch (e) {
+			status = `Error loading MP4 folder: ${e}`;
+		}
+	});
 
 	async function loadConfig() {
 		try {
@@ -39,8 +59,49 @@
 
 	async function playAllVideos() {
 		try {
-			await invoke('play_all_videos');
-			status = 'All videos playing';
+			videoList = await invoke('get_video_list');
+			if (videoList.length === 0) {
+				status = 'No videos found';
+				return;
+			}
+			currentVideoIndex = 0;
+			playCurrentVideo();
+			status = 'Playing all videos';
+		} catch (e) {
+			status = `Error: ${e}`;
+		}
+	}
+
+	async function playCurrentVideo() {
+		if (currentVideoIndex >= 0 && currentVideoIndex < videoList.length) {
+			const filename = videoList[currentVideoIndex];
+			const fullPath = `${mp4Folder}/${filename}.mp4`;
+
+			const src = convertFileSrc(fullPath);
+
+			if (!videoElement) {
+				return;
+			}
+			videoElement.src = src;
+			await videoElement.play();
+			if (videoElement.requestFullscreen) {
+				await videoElement.requestFullscreen();
+			}
+		}
+	}
+
+	function playNext() {
+		currentVideoIndex++;
+		if (currentVideoIndex >= videoList.length) {
+			currentVideoIndex = 0; // loop back
+		}
+		playCurrentVideo();
+	}
+
+	async function listVideos() {
+		try {
+			videos = await invoke('get_video_list');
+			status = `Found ${videos.length} videos`;
 		} catch (e) {
 			status = `Error: ${e}`;
 		}
@@ -74,6 +135,7 @@
 		>
 		<button onclick={playVideo} class="btn btn-info">Play Video</button>
 		<button onclick={playAllVideos} class="btn btn-success">Play All Videos</button>
+		<button onclick={listVideos} class="btn btn-warning">List Videos</button>
 	</div>
 
 	<br />
@@ -83,4 +145,83 @@
 	{/if}
 
 	<p>Status: {status}</p>
+
+	{#if videos.length > 0}
+		<ul>
+			{#each videos as v}
+				<li>{v}</li>
+			{/each}
+		</ul>
+	{/if}
+
+	{#if currentVideoIndex >= 0}
+		<p>Now playing: {videoList[currentVideoIndex]}</p>
+		<video
+			bind:this={videoElement}
+			onended={playNext}
+			controls={false}
+			preload="auto"
+			style="width: 100%; max-width: 800px;"
+			class="no-controls"
+		>
+			<track kind="captions" />
+		</video>
+	{/if}
 </div>
+
+<style>
+	.no-controls::-webkit-media-controls {
+		display: none !important;
+	}
+	.no-controls::-webkit-media-controls-panel {
+		display: none !important;
+	}
+	.no-controls::-webkit-media-controls-play-button {
+		display: none !important;
+	}
+	.no-controls::-webkit-media-controls-volume-slider {
+		display: none !important;
+	}
+	.no-controls::-webkit-media-controls-mute-button {
+		display: none !important;
+	}
+	.no-controls::-webkit-media-controls-timeline {
+		display: none !important;
+	}
+	.no-controls::-webkit-media-controls-current-time-display {
+		display: none !important;
+	}
+	.no-controls::-webkit-media-controls-time-remaining-display {
+		display: none !important;
+	}
+	.no-controls::-webkit-media-controls-fullscreen-button {
+		display: none !important;
+	}
+	.no-controls::-moz-media-controls {
+		display: none !important;
+	}
+	.no-controls::-moz-media-controls-panel {
+		display: none !important;
+	}
+	.no-controls::-moz-media-controls-play-button {
+		display: none !important;
+	}
+	.no-controls::-moz-media-controls-volume-slider {
+		display: none !important;
+	}
+	.no-controls::-moz-media-controls-mute-button {
+		display: none !important;
+	}
+	.no-controls::-moz-media-controls-timeline {
+		display: none !important;
+	}
+	.no-controls::-moz-media-controls-current-time-display {
+		display: none !important;
+	}
+	.no-controls::-moz-media-controls-time-remaining-display {
+		display: none !important;
+	}
+	.no-controls::-moz-media-controls-fullscreen-button {
+		display: none !important;
+	}
+</style>

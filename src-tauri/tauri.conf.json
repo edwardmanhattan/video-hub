@@ -1,6 +1,6 @@
 {
 	"$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-	"productName": "video-hub",
+	"productName": "Video Hub",
 	"version": "0.1.0",
 	"identifier": "com.video.hub",
 	"build": {
@@ -20,7 +20,15 @@
 			}
 		],
 		"security": {
-			"csp": null
+			"csp": "default-src 'self' ipc: http://ipc.localhost; img-src 'self' asset: http://asset.localhost",
+			"assetProtocol": {
+				"enable": true,
+				"scope": [
+					"C:/Users/Edward/Documents/Svelte Projects/Tauri Projects/video-hub/**",
+					"$HOME/**",
+					"$USERPROFILE/**"
+				]
+			}
 		}
 	},
 	"bundle": {

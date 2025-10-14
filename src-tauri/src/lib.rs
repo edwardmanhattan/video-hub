@@ -1,15 +1,27 @@
 use std::fs;
 use std::process::Command;
 use std::path::Path;
+use std::env;
 
 #[tauri::command]
 fn read_config() -> Result<String, String> {
     fs::read_to_string("config.txt").map_err(|e| e.to_string())
 }
 
+fn get_mp4_folder() -> String {
+    #[cfg(target_os = "windows")]
+    let home = env::var("USERPROFILE").unwrap();
+    #[cfg(not(target_os = "windows"))]
+    let home = env::var("HOME").unwrap();
+    Path::new(&home).join("Video Hub Videos").to_string_lossy().to_string()
+}
 
-const MP4_FOLDER: &str = "C:/Users/Edward/Documents/Svelte Projects/Tauri Projects/video-hub/Downloaded Videos/";
 const MP4_EXTENSION: &str = ".mp4";
+
+#[tauri::command]
+fn get_mp4_folder_cmd() -> String {
+    get_mp4_folder()
+}
 
 #[tauri::command]
 fn download_video(url: String, path: String) -> Result<(), String> {
@@ -18,9 +30,10 @@ fn download_video(url: String, path: String) -> Result<(), String> {
         return Err(format!("HTTP error: {}", response.status()));
     }
 
-    let downloaded_path = [MP4_FOLDER, &path, MP4_EXTENSION].join("");
+    let mp4_folder = get_mp4_folder();
+    let downloaded_path = format!("{}/{}{}", mp4_folder, path, MP4_EXTENSION);
 
-    fs::create_dir_all(Path::new(MP4_FOLDER)).map_err(|e| e.to_string())?;
+    fs::create_dir_all(Path::new(&mp4_folder)).map_err(|e| e.to_string())?;
 
     let bytes = response.bytes().map_err(|e| e.to_string())?;
     fs::write(&downloaded_path, bytes).map_err(|e| e.to_string())
@@ -28,7 +41,7 @@ fn download_video(url: String, path: String) -> Result<(), String> {
 
 #[tauri::command]
 fn play_video(path: String) -> Result<(), String> {
-    let full_path = [MP4_FOLDER, &path, MP4_EXTENSION].join("");
+    let full_path = format!("{}/{}{}", get_mp4_folder(), path, MP4_EXTENSION);
     #[cfg(target_os = "windows")]
     {
         Command::new("cmd")
@@ -47,9 +60,29 @@ fn play_video(path: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn get_video_list() -> Result<Vec<String>, String> {
+    let mp4_folder = get_mp4_folder();
+    fs::create_dir_all(Path::new(&mp4_folder)).map_err(|e| e.to_string())?;
+    let mut files = Vec::new();
+    for entry in fs::read_dir(&mp4_folder).map_err(|e| e.to_string())? {
+        let entry = entry.map_err(|e| e.to_string())?;
+        let path = entry.path();
+        if path.extension().and_then(|s| s.to_str()) == Some("mp4") {
+            if let Some(name) = path.file_stem().and_then(|s| s.to_str()) {
+                files.push(name.to_string());
+            }
+        }
+    }
+    files.sort();
+    Ok(files)
+}
+
+#[tauri::command]
 fn play_all_videos() -> Result<(), String> {
+    let mp4_folder = get_mp4_folder();
+    fs::create_dir_all(Path::new(&mp4_folder)).map_err(|e| e.to_string())?;
     let mut paths = Vec::new();
-    for entry in fs::read_dir(MP4_FOLDER).map_err(|e| e.to_string())? {
+    for entry in fs::read_dir(&mp4_folder).map_err(|e| e.to_string())? {
         let entry = entry.map_err(|e| e.to_string())?;
         let path = entry.path();
         if path.extension().and_then(|s| s.to_str()) == Some("mp4") {
@@ -90,7 +123,7 @@ fn play_all_videos() -> Result<(), String> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
-    .invoke_handler(tauri::generate_handler![read_config, download_video, play_video, play_all_videos])
+    .invoke_handler(tauri::generate_handler![read_config, download_video, play_video, play_all_videos, get_video_list, get_mp4_folder_cmd])
     .setup(|app| {
       if cfg!(debug_assertions) {
         app.handle().plugin(
