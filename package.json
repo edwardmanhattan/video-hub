@@ -33,6 +33,7 @@
 		"vite-plugin-devtools-json": "^1.0.0"
 	},
 	"dependencies": {
-		"@tauri-apps/api": "^2.8.0"
+		"@tauri-apps/api": "^2.8.0",
+		"@tauri-apps/plugin-fs": "^2.0.0"
 	}
 }
