@@ -10,7 +10,8 @@
 	let videoList = $state<string[]>([]);
 	let videos = $state<string[]>([]);
 	let currentVideoIndex = $state(-1);
-	let videoElement: HTMLVideoElement | undefined = $state(undefined);
+		let videoElement: HTMLVideoElement | undefined = $state(undefined);
+		let videoError = $state('');
 	let mp4Folder = $state('');
 
 	onMount(async () => {
@@ -72,31 +73,41 @@
 		}
 	}
 
-	async function playCurrentVideo() {
-		if (currentVideoIndex >= 0 && currentVideoIndex < videoList.length) {
-			const filename = videoList[currentVideoIndex];
-			const fullPath = `${mp4Folder}/${filename}.mp4`;
+		async function playCurrentVideo() {
+			if (currentVideoIndex >= 0 && currentVideoIndex < videoList.length) {
+				const filename = videoList[currentVideoIndex];
+				const fullPath = `${mp4Folder}/${filename}.mp4`;
 
-			const src = convertFileSrc(fullPath);
+				const src = convertFileSrc(fullPath);
 
-			if (!videoElement) {
-				return;
-			}
-			videoElement.src = src;
-			await videoElement.play();
-			if (videoElement.requestFullscreen) {
-				await videoElement.requestFullscreen();
+				if (!videoElement) {
+					return;
+				}
+				videoElement.src = src;
+				try {
+					await videoElement.play();
+					if (videoElement.requestFullscreen) {
+						await videoElement.requestFullscreen();
+					}
+				} catch (e) {
+					status = `Error playing video: ${e}`;
+				}
 			}
 		}
-	}
 
-	function playNext() {
-		currentVideoIndex++;
-		if (currentVideoIndex >= videoList.length) {
-			currentVideoIndex = 0; // loop back
+		function playNext() {
+			currentVideoIndex++;
+			if (currentVideoIndex >= videoList.length) {
+				currentVideoIndex = 0; // loop back
+			}
+			playCurrentVideo();
 		}
-		playCurrentVideo();
-	}
+
+		function handleVideoError(event: Event) {
+			const target = event.target as HTMLVideoElement;
+			videoError = `Video error: ${target.error?.message || 'Unknown error'}`;
+			status = videoError;
+		}
 
 	async function listVideos() {
 		try {
@@ -145,6 +156,9 @@
 	{/if}
 
 	<p>Status: {status}</p>
+	{#if videoError}
+		<p>Error: {videoError}</p>
+	{/if}
 
 	{#if videos.length > 0}
 		<ul>
@@ -159,6 +173,7 @@
 		<video
 			bind:this={videoElement}
 			onended={playNext}
+			onerror={handleVideoError}
 			controls={false}
 			preload="auto"
 			style="width: 100%; max-width: 800px;"
