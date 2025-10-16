@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { invoke } from '@tauri-apps/api/core';
-	import { readFile } from '@tauri-apps/plugin-fs';
+
 
 	let config = $state('');
 	let videoUrl = $state('');
@@ -84,10 +84,7 @@
 			}
 
 			try {
-				const data = await readFile(fullPath);
-				const blob = new Blob([data], { type: 'video/mp4' });
-				const src = URL.createObjectURL(blob);
-				videoElement.src = src;
+				videoElement.src = `file://${fullPath}`;
 				await videoElement.play();
 				if (videoElement.requestFullscreen) {
 					await videoElement.requestFullscreen();
