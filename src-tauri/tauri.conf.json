@@ -30,17 +30,6 @@
 					"$USERPROFILE/**"
 				]
 			}
-		},
-		"allowlist": {
-			"fs": {
-				"all": false,
-				"readFile": true,
-				"scope": ["$HOME/Video Hub Videos/*"]
-			},
-			"protocol": {
-				"asset": true,
-				"assetScope": ["$HOME/Video Hub Videos/*"]
-			}
 		}
 	},
 	"bundle": {
