@@ -11,8 +11,8 @@
 	let videoList = $state<string[]>([]);
 	let videos = $state<string[]>([]);
 	let currentVideoIndex = $state(-1);
-		let videoElement: HTMLVideoElement | undefined = $state(undefined);
-		let videoError = $state('');
+	let videoElement: HTMLVideoElement | undefined = $state(undefined);
+	let videoError = $state('');
 	let mp4Folder = $state('');
 
 	onMount(async () => {
@@ -74,63 +74,63 @@
 		}
 	}
 
-		async function playCurrentVideo() {
-			if (currentVideoIndex >= 0 && currentVideoIndex < videoList.length) {
-				const filename = videoList[currentVideoIndex];
-				const fullPath = `${mp4Folder}/${filename}.mp4`;
+	async function playCurrentVideo() {
+		if (currentVideoIndex >= 0 && currentVideoIndex < videoList.length) {
+			const filename = videoList[currentVideoIndex];
+			const fullPath = `${mp4Folder}/${filename}.mp4`;
 
-				if (!videoElement) {
-					return;
-				}
+			if (!videoElement) {
+				return;
+			}
 
-				try {
-					const data = await readFile(fullPath);
-					const blob = new Blob([data], { type: 'video/mp4' });
-					const src = URL.createObjectURL(blob);
-					videoElement.src = src;
-					await videoElement.play();
-					if (videoElement.requestFullscreen) {
-						await videoElement.requestFullscreen();
-					}
-				} catch (e) {
-					status = `Error playing video: ${e}`;
+			try {
+				const data = await readFile(fullPath);
+				const blob = new Blob([data], { type: 'video/mp4' });
+				const src = URL.createObjectURL(blob);
+				videoElement.src = src;
+				await videoElement.play();
+				if (videoElement.requestFullscreen) {
+					await videoElement.requestFullscreen();
 				}
+			} catch (e) {
+				status = `Error playing video: ${e}`;
 			}
 		}
+	}
 
-		function playNext() {
-			currentVideoIndex++;
-			if (currentVideoIndex >= videoList.length) {
-				currentVideoIndex = 0; // loop back
-			}
-			playCurrentVideo();
+	function playNext() {
+		currentVideoIndex++;
+		if (currentVideoIndex >= videoList.length) {
+			currentVideoIndex = 0; // loop back
 		}
+		playCurrentVideo();
+	}
 
-		function handleVideoError(event: Event) {
-			const target = event.target as HTMLVideoElement;
-			const error = target.error;
-			let errorMsg = 'Unknown error';
-			if (error) {
-				switch (error.code) {
-					case 1:
-						errorMsg = 'Aborted';
-						break;
-					case 2:
-						errorMsg = 'Network error';
-						break;
-					case 3:
-						errorMsg = 'Decode error';
-						break;
-					case 4:
-						errorMsg = 'Source not supported';
-						break;
-					default:
-						errorMsg = `Error code: ${error.code}`;
-				}
+	function handleVideoError(event: Event) {
+		const target = event.target as HTMLVideoElement;
+		const error = target.error;
+		let errorMsg = 'Unknown error';
+		if (error) {
+			switch (error.code) {
+				case 1:
+					errorMsg = 'Aborted';
+					break;
+				case 2:
+					errorMsg = 'Network error';
+					break;
+				case 3:
+					errorMsg = 'Decode error';
+					break;
+				case 4:
+					errorMsg = 'Source not supported';
+					break;
+				default:
+					errorMsg = `Error code: ${error.code}`;
 			}
-			videoError = `Video error: ${errorMsg}`;
-			status = videoError;
 		}
+		videoError = `Video error: ${errorMsg}`;
+		status = videoError;
+	}
 
 	async function listVideos() {
 		try {

@@ -26,6 +26,7 @@
 				"scope": [
 					"C:/Users/Edward/Documents/Svelte Projects/Tauri Projects/video-hub/**",
 					"$HOME/**",
+					"$HOME/Video Hub Videos/**",
 					"$USERPROFILE/**"
 				]
 			}
