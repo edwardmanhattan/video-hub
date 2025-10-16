@@ -86,9 +86,6 @@
 			try {
 				videoElement.src = convertFileSrc(fullPath);
 				await videoElement.play();
-				if (videoElement.requestFullscreen) {
-					await videoElement.requestFullscreen();
-				}
 			} catch (e) {
 				status = `Error playing video: ${e}`;
 			}

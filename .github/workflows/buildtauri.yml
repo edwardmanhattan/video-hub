@@ -3,7 +3,7 @@ name: 'publish'
 on:
   workflow_dispatch:
   push:
-    branches: [main] #
+    branches: [master] #
 
 jobs:
   publish-tauri:
@@ -19,12 +19,12 @@ jobs:
             deb: arm64
             rpm: aarch64
             appimage: aarch64
-          - platform: 'ubuntu-22.04'
-            args: ''
-            arch: amd64
-            deb: amd64
-            rpm: x86_64
-            appimage: x86_64
+          # - platform: 'ubuntu-22.04'
+          #   args: ''
+          #   arch: amd64
+          #   deb: amd64
+          #   rpm: x86_64
+          #   appimage: x86_64
 
     runs-on: ${{ matrix.platform }}
     steps:
