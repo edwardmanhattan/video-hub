@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { invoke } from '@tauri-apps/api/core';
+	import { invoke, convertFileSrc } from '@tauri-apps/api/core';
 
 
 	let config = $state('');
@@ -84,7 +84,7 @@
 			}
 
 			try {
-				videoElement.src = `file://${fullPath}`;
+				videoElement.src = convertFileSrc(fullPath);
 				await videoElement.play();
 				if (videoElement.requestFullscreen) {
 					await videoElement.requestFullscreen();
