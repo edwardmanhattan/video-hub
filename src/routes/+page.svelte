@@ -2,7 +2,6 @@
 	import { onMount } from 'svelte';
 	import { invoke, convertFileSrc } from '@tauri-apps/api/core';
 
-
 	let config = $state('');
 	let videoUrl = $state('');
 	let videoPath = $state('');
@@ -14,6 +13,14 @@
 	let videoElement: HTMLVideoElement | undefined = $state(undefined);
 	let videoError = $state('');
 	let mp4Folder = $state('');
+
+	// Video selection with duration
+	type VideoSelection = {
+		name: string;
+		selected: boolean;
+		duration: number;
+	};
+	let videoSelections = $state<VideoSelection[]>([]);
 
 	onMount(async () => {
 		document.addEventListener('fullscreenchange', () => {
@@ -129,7 +136,33 @@
 	async function listVideos() {
 		try {
 			videos = await invoke('get_video_list');
+			// Initialize video selections with default duration of 10 seconds
+			videoSelections = videos.map((name) => ({
+				name,
+				selected: false,
+				duration: 10
+			}));
 			status = `Found ${videos.length} videos`;
+		} catch (e) {
+			status = `Error: ${e}`;
+		}
+	}
+
+	function getSelectedVideos(): string[] {
+		return videoSelections
+			.filter((selection) => selection.selected)
+			.map((selection) => selection.name);
+	}
+
+	async function playSelectedVideosExternally() {
+		try {
+			const selectedVideos = getSelectedVideos();
+			if (selectedVideos.length === 0) {
+				status = 'No videos selected';
+				return;
+			}
+			await invoke('play_selected_videos_externally', { videos: selectedVideos });
+			status = `Playing ${selectedVideos.length} selected videos externally`;
 		} catch (e) {
 			status = `Error: ${e}`;
 		}
@@ -164,6 +197,9 @@
 		<button onclick={playVideo} class="btn btn-info">Play Video</button>
 		<button onclick={playAllVideos} class="btn btn-success">Play All Videos</button>
 		<button onclick={listVideos} class="btn btn-warning">List Videos</button>
+		<button onclick={playSelectedVideosExternally} class="btn btn-primary"
+			>Play Selected Videos Externally</button
+		>
 	</div>
 
 	<br />
@@ -177,12 +213,41 @@
 		<p>Error: {videoError}</p>
 	{/if}
 
-	{#if videos.length > 0}
-		<ul>
-			{#each videos as v}
-				<li>{v}</li>
-			{/each}
-		</ul>
+	{#if videoSelections.length > 0}
+		<div class="mt-6">
+			<h3 class="mb-4 text-lg font-semibold">Available Videos</h3>
+			<div class="max-h-96 space-y-3 overflow-y-auto">
+				{#each videoSelections as selection, index}
+					<div class="flex items-center gap-4 rounded-lg border bg-base-200 p-3">
+						<label class="flex cursor-pointer items-center gap-2">
+							<input
+								type="checkbox"
+								bind:checked={selection.selected}
+								class="checkbox checkbox-primary"
+							/>
+							<span class="font-medium">{selection.name}</span>
+						</label>
+
+						<div class="ml-auto flex items-center gap-2">
+							<label class="text-sm font-medium">Duration:</label>
+							<input
+								type="number"
+								min="1"
+								max="300"
+								bind:value={selection.duration}
+								class="input-bordered input input-sm w-20"
+								placeholder="10"
+							/>
+							<span class="text-sm text-gray-500">seconds</span>
+						</div>
+					</div>
+				{/each}
+			</div>
+
+			<div class="mt-4 text-sm text-gray-600">
+				Selected: {getSelectedVideos().length} videos
+			</div>
+		</div>
 	{/if}
 
 	{#if currentVideoIndex >= 0}
@@ -199,11 +264,14 @@
 			<track kind="captions" />
 		</video>
 	{/if}
-</div>
 
-<footer>
-	<p>Video Hub@0.1.0</p>
-</footer>
+	<br />
+	<br />
+
+	<footer>
+		<p class="font-bold">Video Hub@0.1.0</p>
+	</footer>
+</div>
 
 <style>
 	.no-controls::-webkit-media-controls {

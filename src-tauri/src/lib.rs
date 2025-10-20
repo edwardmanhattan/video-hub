@@ -3,6 +3,7 @@ use std::process::Command;
 use std::path::Path;
 use std::env;
 
+
 #[tauri::command]
 fn read_config() -> Result<String, String> {
     fs::read_to_string("config.txt").map_err(|e| e.to_string())
@@ -120,11 +121,34 @@ fn play_all_videos() -> Result<(), String> {
     }
 }
 
+#[tauri::command]
+fn play_selected_videos_externally(videos: Vec<String>) -> Result<(), String> {
+    if videos.is_empty() {
+        return Err("No videos selected".to_string());
+    }
+
+    let mp4_folder = get_mp4_folder();
+
+    // Build full paths for all selected videos
+    let full_paths: Vec<String> = videos
+        .iter()
+        .map(|video_name| format!("{}/{}.mp4", mp4_folder, video_name))
+        .collect();
+
+    // Use mpv command directly to play the videos
+    Command::new("mpv")
+        .args(&full_paths)
+        .spawn()
+        .map_err(|e| format!("Failed to start mpv: {}", e))?;
+
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
     .plugin(tauri_plugin_fs::init())
-    .invoke_handler(tauri::generate_handler![read_config, download_video, play_video, play_all_videos, get_video_list, get_mp4_folder_cmd])
+    .invoke_handler(tauri::generate_handler![read_config, download_video, play_video, play_all_videos, get_video_list, get_mp4_folder_cmd, play_selected_videos_externally])
     .setup(|app| {
       if cfg!(debug_assertions) {
         app.handle().plugin(
